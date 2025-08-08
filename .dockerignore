@@ -1,0 +1,49 @@
+# This file is generated based on .gitignore
+# For more information, see https://docs.docker.com/engine/reference/builder/#dockerignore-file
+
+# From .gitignore
+.direnv
+.envrc
+.env
+*.orig
+*.BACKUP.*
+*.BASE.*
+*.LOCAL.*
+*.REMOTE.*
+*_BACKUP_*.txt
+*_BASE_*.txt
+*_LOCAL_*.txt
+*_REMOTE_*.txt
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+.vscode/*
+.history/
+*.vsix
+.history
+.ionide
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+.secrets/
+n8n/
+shared/
+
+# Docker specific
+.git
+.gitignore
+.dockerignore
+Dockerfile
+README.Docker.md

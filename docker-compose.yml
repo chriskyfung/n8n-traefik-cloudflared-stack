@@ -1,0 +1,68 @@
+volumes:
+  n8n_storage:
+  traefik_data:
+
+networks:
+  n8n-net:
+
+x-n8n: &service-n8n
+  image: n8nio/n8n:latest
+  networks: ['n8n-net']
+  environment:
+    - N8N_HOST=${N8N_HOST}
+    - N8N_PORT=5678
+    - N8N_PROTOCOL=https
+    - NODE_ENV=production
+    - N8N_EDITOR_BASE=https://${N8N_HOST}/
+    - WEBHOOK_URL=https://${N8N_WEBHOOK}/
+    - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+
+services:
+  traefik:
+    image: traefik:v3.5.0
+    container_name: traefik
+    restart: always
+    networks: ['n8n-net']
+    command:
+      - "--log"
+      - "--log.level=${LOG_LEVEL:-INFO}"
+      - "--log.format=json"
+      - "--api=true"
+      # - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      # - "--serversTransport.insecureSkipVerify=true" # Allow self-signed certificates for target hosts - https://doc.traefik.io/traefik/routing/overview/#insecureskipverify
+      - "--entrypoints.n8n_ui.address=:8082"
+      - "--entrypoints.n8n_webhook.address=:8083"
+    ports:
+      - "8082:8082"
+      - "8083:8083"
+    volumes:
+      - traefik_data:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  n8n:
+    <<: *service-n8n
+    hostname: n8n
+    container_name: n8n
+    restart: unless-stopped
+    volumes:
+      - n8n_storage:/home/node/.n8n
+      - ./n8n/backup:/backup
+      - ./shared:/data/shared
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.n8n-ui.rule=Host(`${N8N_HOST}`)"
+      - "traefik.http.routers.n8n-ui.entrypoints=n8n_ui"
+      - "traefik.http.routers.n8n-webhook.rule=Host(`${N8N_WEBHOOK}`)"
+      - "traefik.http.routers.n8n-webhook.entrypoints=n8n_webhook"
+      - "traefik.http.services.n8n.loadbalancer.server.port=5678"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: always
+    networks: ['n8n-net']
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
