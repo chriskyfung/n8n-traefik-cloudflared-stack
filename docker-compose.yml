@@ -23,6 +23,11 @@ services:
     image: traefik:v3.5.0
     container_name: traefik
     restart: always
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     networks: ['n8n-net']
     command:
       - "--log"
@@ -47,6 +52,11 @@ services:
     hostname: n8n
     container_name: n8n
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:5678/healthz || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
     volumes:
       - n8n_storage:/home/node/.n8n
       - ./n8n/backup:/backup
