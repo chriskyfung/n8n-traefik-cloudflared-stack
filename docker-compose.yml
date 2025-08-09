@@ -13,9 +13,10 @@ x-n8n: &service-n8n
     - N8N_PORT=5678
     - N8N_PROTOCOL=https
     - NODE_ENV=production
-    - N8N_EDITOR_BASE=https://${N8N_HOST}/
+    - N8N_EDITOR_BASE_URL=https://${N8N_HOST}/
     - WEBHOOK_URL=https://${N8N_WEBHOOK}/
     - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+    - DB_SQLITE_VACUUM_ON_STARTUP=${DB_SQLITE_VACUUM_ON_STARTUP}
 
 services:
   traefik:
