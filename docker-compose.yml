@@ -92,6 +92,6 @@ services:
     container_name: cloudflared
     restart: always
     networks: ['n8n-net']
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    command: tunnel --no-autoupdate run
     environment:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
