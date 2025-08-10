@@ -26,3 +26,11 @@ Detailed setup and usage instructions are located in the `/docs` directory:
 *   **[Docker Usage Guide](./docs/docker-usage.md)**: For running the stack with Docker Compose.
 *   **[Podman (Rootless) Setup Guide](./docs/podman-setup.md)**: For a full setup guide on a rootless Podman host.
 *   **[Changelog](./CHANGELOG.md)**: For a full list of changes from the original tutorial and ongoing updates.
+
+## Attribution
+
+This project is based on the excellent tutorial by Kjetil Furas. If you use this project as a starting point, a link back to this repository is appreciated as a courtesy.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
