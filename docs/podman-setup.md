@@ -2,16 +2,31 @@
 
 This setup can be run using rootless Podman on a Linux host. The following guide explains the necessary host configuration.
 
-### 0. Prerequisite: `podman-compose` Version
+### 0. Prerequisite: `podman-compose` on Ubuntu 24.04
 
-It is critical to use a recent version of `podman-compose` (v1.5.0 or newer). The version included in some Linux distributions (e.g., v1.0.6 in Ubuntu 24.04) is outdated and does not integrate properly with modern Podman, causing commands like `podman ps` and `podman volume ls` to fail to show resources.
+On Ubuntu 24.04, it is critical to use `podman-compose` v1.5.0 or newer. The version included in the `apt` repository (v1.0.6) is outdated and does not integrate properly with modern Podman, causing commands like `podman ps` and `podman volume ls` to fail to show resources.
 
-We recommend installing the latest version manually. A common method is to download the script directly from GitHub, which ensures you have the latest stable version without relying on package managers:
+Follow these steps to install the `apt` version and then upgrade it manually:
 
-```bash
-curl -o /usr/local/bin/podman-compose https://raw.githubusercontent.com/containers/podman-compose/main/podman_compose.py
-chmod +x /usr/local/bin/podman-compose
-```
+1.  **Install the `apt` package**:
+    ```bash
+    sudo apt-get update
+    sudo apt-get install podman-compose
+    ```
+
+2.  **Upgrade to the latest version**:
+    Download the latest script from GitHub to ensure you have a modern, stable version:
+    ```bash
+    curl -o /usr/local/bin/podman-compose https://raw.githubusercontent.com/containers/podman-compose/main/podman_compose.py
+    chmod +x /usr/local/bin/podman-compose
+    ```
+
+3.  **Set the provider environment variable**:
+    To ensure the system uses the manually installed version, add the following line to your shell configuration file (e.g., `~/.bashrc`, `~/.zshrc`):
+    ```bash
+    export PODMAN_COMPOSE_PROVIDER="/usr/local/bin/podman-compose"
+    ```
+    Remember to reload your shell or run `source ~/.bashrc` (or equivalent) for the changes to take effect.
 
 ### 1. Host Configuration
 
