@@ -20,9 +20,14 @@ x-n8n: &service-n8n
 
 services:
   traefik:
-    image: traefik:v3.5.0
+    image: traefik:v3.5
     container_name: traefik
+    depends_on:
+      - n8n
     restart: always
+    environment:
+      - N8N_HOST=${N8N_HOST}
+      - N8N_WEBHOOK=${N8N_WEBHOOK}
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
       interval: 30s
@@ -34,9 +39,11 @@ services:
       - "--log.level=${LOG_LEVEL:-INFO}"
       - "--log.format=json"
       - "--api=true"
-      # - "--api.insecure=true"
-      - "--providers.docker=true"
+      - "--api.insecure=true"
+      - "--providers.docker=false"
       - "--providers.docker.exposedbydefault=false"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
       # - "--serversTransport.insecureSkipVerify=true" # Allow self-signed certificates for target hosts - https://doc.traefik.io/traefik/routing/overview/#insecureskipverify
       - "--entrypoints.n8n_ui.address=:8082"
       - "--entrypoints.n8n_webhook.address=:8083"
@@ -45,7 +52,7 @@ services:
       - "8083:8083"
     volumes:
       - traefik_data:/letsencrypt
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik:/etc/traefik/dynamic:ro
     deploy:
       resources:
         limits:
@@ -69,31 +76,6 @@ services:
       - n8n_storage:/home/node/.n8n
       - ./n8n/backup:/backup
       - ./shared:/data/shared
-    labels:
-      - "traefik.enable=true"
-      
-      # UI router remains completely unrestricted (all paths allowed)
-      - "traefik.http.routers.n8n-ui.rule=Host(`${N8N_HOST}`)"
-      - "traefik.http.routers.n8n-ui.entrypoints=n8n_ui"
-      - "traefik.http.routers.n8n-ui.service=n8n"
-      
-      # Webhook blocked paths router (returns 403 for / and /signin)
-      - "traefik.http.routers.n8n-webhook-blocked.rule=Host(`${N8N_WEBHOOK}`) && (Path(`/`) || Path(`/signin`) || PathPrefix(`/home/`))"
-      - "traefik.http.routers.n8n-webhook-blocked.entrypoints=n8n_webhook"
-      - "traefik.http.routers.n8n-webhook-blocked.middlewares=block-paths"
-      - "traefik.http.routers.n8n-webhook-blocked.priority=20"
-      
-      # Middleware to return 403 for blocked paths
-      - "traefik.http.middlewares.block-paths.ipwhitelist.sourcerange=1.1.1.1/32"
-      
-      # Webhook allowed paths router (everything except / and /signin)
-      - "traefik.http.routers.n8n-webhook-allowed.rule=Host(`${N8N_WEBHOOK}`) && !(Path(`/`) || Path(`/signin`) || PathPrefix(`/home/`))"
-      - "traefik.http.routers.n8n-webhook-allowed.entrypoints=n8n_webhook"
-      - "traefik.http.routers.n8n-webhook-allowed.service=n8n"
-      - "traefik.http.routers.n8n-webhook-allowed.priority=10"
-      
-      # Service configuration remains unchanged
-      - "traefik.http.services.n8n.loadbalancer.server.port=5678"
     deploy:
       resources:
         limits:
@@ -105,7 +87,6 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:latest
-    container_name: cloudflared
     restart: always
     networks: ['n8n-net']
     command: tunnel --no-autoupdate run
