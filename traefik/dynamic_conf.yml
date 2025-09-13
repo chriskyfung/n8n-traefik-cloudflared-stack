@@ -1,0 +1,36 @@
+http:
+  routers:
+    n8n-ui:
+      rule: "Host(`{{env "N8N_HOST"}}`)"
+      entryPoints:
+        - n8n_ui
+      service: n8n
+    n8n-webhook-blocked:
+      rule: "Host(`{{env "N8N_WEBHOOK"}}`) && (Path(`/`) || Path(`/signin`) || PathPrefix(`/home/`))"
+      entryPoints:
+        - n8n_webhook
+      middlewares:
+        - block-paths
+      service: n8n
+      priority: 20
+    n8n-webhook-allowed:
+      rule: "Host(`{{env "N8N_WEBHOOK"}}`) && !(Path(`/`) || Path(`/signin`) || PathPrefix(`/home/`))"
+      entryPoints:
+        - n8n_webhook
+      service: n8n
+      priority: 10
+
+  services:
+    n8n:
+      loadBalancer:
+        servers:
+          - url: "http://n8n:5678"
+
+  middlewares:
+    block-paths:
+      ipAllowList:
+        # This is a trick to block requests. By setting a specific IP address  
+        # that will never be the source, we ensure this middleware always  
+        # returns a 403 Forbidden, effectively blocking access.  
+        sourceRange:
+          - "1.1.1.1/32"

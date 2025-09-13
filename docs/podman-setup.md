@@ -28,51 +28,35 @@ Follow these steps to install the `apt` version and then upgrade it manually:
     ```
     Remember to reload your shell or run `source ~/.bashrc` (or equivalent) for the changes to take effect.
 
-### 1. Host Configuration
+### 1. Configuration
 
-These steps configure the host environment to allow Traefik to run correctly as a non-root user.
+This stack uses a file-based configuration for Traefik, located in the `./traefik` directory. This approach is more secure than providing the Traefik container with access to the Podman socket.
 
-#### Enable Podman Socket
-
-Traefik needs to communicate with the Podman API to detect containers. Enable and start the user-specific Podman socket with the following command:
-
-```bash
-systemctl --user enable --now podman.socket
-```
-
-#### Allow Binding to Privileged Ports
-
-To allow the Traefik container (running as a non-root user) to bind to standard HTTP and HTTPS ports, you need to adjust a kernel parameter:
-
-```bash
-sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
-```
-
-To make this change persistent across reboots, create a configuration file:
-
-```bash
-echo "net.ipv4.ip_unprivileged_port_start=80" | sudo tee /etc/sysctl.d/podman-traefik.conf
-```
-
-### 2. Certificate Storage (acme.json)
+#### Certificate Storage (acme.json)
 
 The `podman-compose.yml` file is configured to use a persistent named volume called `traefik_data`. Traefik will automatically create and manage an `acme.json` file within this volume to store your Let's Encrypt SSL certificates. This is handled by the container and requires no manual file creation on the host.
 
-### 3. Podman Commands
+### 2. Running the Stack
 
-Once the host is configured, you can use the following commands to manage the stack.
+Once the prerequisites are met, you can use the following commands to manage the stack.
 
-#### Running with Podman
+#### A Note on `podman-remote`
 
-To start the stack with Podman, use the following command:
+Because this setup uses a local directory bind mount (`./traefik`) for its configuration, you must run `podman-compose` on the same machine that is running the Podman service.
+
+If you are managing a remote machine, first ensure the entire project directory is present on the remote machine (e.g., via `git clone` or `scp`), and then run all commands directly on that machine (e.g., over an SSH session).
+
+#### Starting the Stack
+
+To start all services in detached mode, run the following command:
 
 ```bash
 podman-compose -f podman-compose.yml up -d
 ```
 
-#### Viewing Logs with Podman
+#### Viewing Logs
 
-Due to a limitation in how `podman-compose` interacts with the Podman socket, it cannot aggregate logs from all services at once. You must view the logs for each service individually.
+`podman-compose` does not currently support aggregating logs from all services at once. You must view the logs for each service individually.
 
 To view the logs for a specific service, append its name to the command. For example:
 
@@ -87,9 +71,9 @@ podman-compose -f podman-compose.yml logs -f n8n
 podman-compose -f podman-compose.yml logs -f cloudflared
 ```
 
-#### Stopping the Stack with Podman
+#### Stopping the Stack
 
-To stop the n8n stack when using Podman, use the following command:
+To stop the n8n stack, use the following command:
 
 ```bash
 podman-compose -f podman-compose.yml down
