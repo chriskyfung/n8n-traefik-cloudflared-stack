@@ -28,6 +28,9 @@ http:
 
   middlewares:
     block-paths:
-      ipWhiteList:
+      ipAllowList:
+        # This is a trick to block requests. By setting a specific IP address  
+        # that will never be the source, we ensure this middleware always  
+        # returns a 403 Forbidden, effectively blocking access.  
         sourceRange:
           - "1.1.1.1/32"

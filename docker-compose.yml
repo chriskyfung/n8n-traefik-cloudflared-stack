@@ -6,7 +6,7 @@ networks:
   n8n-net:
 
 x-n8n: &service-n8n
-  image: n8nio/n8n:latest
+  image: n8nio/n8n:stable
   networks: ['n8n-net']
   environment:
     - N8N_HOST=${N8N_HOST}
@@ -23,7 +23,8 @@ services:
     image: traefik:v3.5
     container_name: traefik
     depends_on:
-      - n8n
+      n8n:
+        condition: service_healthy
     restart: always
     environment:
       - N8N_HOST=${N8N_HOST}
