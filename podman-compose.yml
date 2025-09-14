@@ -46,6 +46,7 @@ services:
       - "--providers.file.directory=/etc/traefik/dynamic"
       - "--providers.file.watch=true"
       # - "--serversTransport.insecureSkipVerify=true" # Allow self-signed certificates for target hosts - https://doc.traefik.io/traefik/routing/overview/#insecureskipverify
+      - "--entrypoints.traefik.address=:8080"
       - "--entrypoints.n8n_ui.address=:8082"
       - "--entrypoints.n8n_webhook.address=:8083"
     ports:
