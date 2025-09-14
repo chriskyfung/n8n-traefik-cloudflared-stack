@@ -41,6 +41,7 @@ services:
       - "--log.format=json"
       - "--api=true"
       - "--api.insecure=true"
+      - "--ping=true"
       - "--providers.docker=false"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.file.directory=/etc/traefik/dynamic"
