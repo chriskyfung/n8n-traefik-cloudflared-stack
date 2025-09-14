@@ -4,6 +4,23 @@ This file documents the changes made to the original project from the [tutorial 
 
 ## [Unreleased]
 
+### Security
+
+-   **Traefik Hardening**: Switched from Docker/Podman socket to a file-based provider (`./traefik/dynamic_conf.yml`) to reduce attack surface and enhance security by preventing direct access to the container daemon.
+
+### Added
+
+-   **Security Policy (`SECURITY.md`)**: Added a formal security policy with instructions for reporting vulnerabilities.
+-   **Traffic Security Analysis (`docs/traffic-security-analysis.md`)**: New documentation detailing the data flow and security measures at each layer of the stack.
+
+### Changed
+
+-   **Pinned Image Versions**: Pinned the `n8n` image to the `stable` tag and `traefik` to `v3.5` for more stable and predictable deployments.
+-   **Synchronized Compose Files**: Updated `podman-compose.yml` to align with the latest improvements in `docker-compose.yml`.
+-   **Podman Documentation**: Overhauled `docs/podman-setup.md` to reflect the new file-based configuration for Traefik.
+
+## [1.0.0] - 2025-08-13
+
 ### Added
 
 -   **Podman Support**: Added `podman-compose.yml` to enable running the stack with Podman.
