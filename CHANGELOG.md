@@ -4,6 +4,8 @@ This file documents the changes made to the original project from the [tutorial 
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-09-15
+
 ### Security
 
 -   **Traefik Hardening**: Switched from Docker/Podman socket to a file-based provider (`./traefik/dynamic_conf.yml`) to reduce attack surface and enhance security by preventing direct access to the container daemon.
@@ -12,6 +14,10 @@ This file documents the changes made to the original project from the [tutorial 
 
 -   **Security Policy (`SECURITY.md`)**: Added a formal security policy with instructions for reporting vulnerabilities.
 -   **Traffic Security Analysis (`docs/traffic-security-analysis.md`)**: New documentation detailing the data flow and security measures at each layer of the stack.
+
+### Fixed
+
+-   **Traefik Healthcheck**: Resolved intermittent healthcheck failures by adjusting the check interval and timeout values.
 
 ### Changed
 
