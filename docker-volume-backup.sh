@@ -23,7 +23,7 @@ clean_volume() {
     read -p "Are you sure you want to clean the volume '${volume_name}'? This will delete all data in it. [y/N] " confirm
     if [[ "$confirm" =~ ^[yY]$ ]]; then
         echo "Cleaning volume ${volume_name}..."
-        docker run --rm -v "${volume_name}:/data" alpine sh -c "rm -rf /data/* /data/*.*"
+        docker run --rm -v "${volume_name}:/data" alpine sh -c "find /data -mindepth 1 -delete"
         if [ $? -eq 0 ]; then
             echo "Volume cleaned successfully."
         else
@@ -60,7 +60,7 @@ backup() {
     docker run --rm -v "${n8n_volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine tar czf "/backup/${n8n_backup_filename}" -C /data .
     if [ $? -ne 0 ]; then
         echo "Backup of ${n8n_volume_name} failed!"
-        docker start n8n "${STACK_NAME}_traefik"
+        docker start "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"
         exit 1
     fi
     echo "n8n backup successful!"
@@ -73,7 +73,7 @@ backup() {
         docker run --rm -v "${traefik_volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine tar czf "/backup/${traefik_backup_filename}" -C /data .
         if [ $? -ne 0 ]; then
             echo "Backup of ${traefik_volume_name} failed!"
-            docker start n8n "${STACK_NAME}_traefik"
+            docker start "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"
             exit 1
         fi
         echo "Traefik backup successful!"
@@ -113,6 +113,7 @@ restore() {
                 echo "n8n restore successful!"
             else
                 echo "n8n restore failed!"
+                exit 1
             fi
         else
             echo "n8n restore cancelled."
@@ -134,6 +135,7 @@ restore() {
                 echo "Traefik restore successful!"
             else
                 echo "Traefik restore failed!"
+                exit 1
             fi
         else
             echo "Traefik restore cancelled."
