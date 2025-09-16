@@ -26,6 +26,7 @@ Detailed setup and usage instructions are located in the `/docs` directory:
 *   **[Docker Usage Guide](./docs/docker-usage.md)**: For running the stack with Docker Compose.
 *   **[Podman (Rootless) Setup Guide](./docs/podman-setup.md)**: For a full setup guide on a rootless Podman host.
 *   **[Traffic Security Analysis](./docs/traffic-security-analysis.md)**: A breakdown of the security for ingress and egress traffic.
+*   **[Backup and Restore Guide](./docs/backup-and-restore.md)**: Instructions for backing up and restoring your data. The script handles container lifecycle and dynamic naming.
 *   **[Changelog](./CHANGELOG.md)**: For a full list of changes from the original tutorial and ongoing updates.
 
 ## Security
