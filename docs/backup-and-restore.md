@@ -1,10 +1,12 @@
 # Backup and Restore
 
-This document describes how to use the `stack-backup.sh` script to backup and restore your n8n and Traefik data volumes.
+This document describes how to use the `docker-volume-backup.sh` script to backup and restore your n8n and Traefik data volumes.
+
+**Note:** This script is designed for use with **Docker and Docker volumes**. It will not work with Podman out of the box. For Podman, please refer to the [Podman Users](#podman-users) section below.
 
 ## Overview
 
-The `stack-backup.sh` script provides a convenient way to create backups of your important data and restore it when needed. It is designed to be run from the root of your `n8n-stack` project directory.
+The `docker-volume-backup.sh` script provides a convenient way to create backups of your important data and restore it when needed. It is designed to be run from the root of your `n8n-stack` project directory.
 
 The script automates the process of stopping the running containers, creating the backup, and restarting the containers.
 
@@ -13,7 +15,7 @@ The script automates the process of stopping the running containers, creating th
 - Docker must be installed and running.
 - The script must be executable. If it is not, run the following command:
   ```bash
-  chmod +x stack-backup.sh
+  chmod +x docker-volume-backup.sh
   ```
 
 ## How it Works
@@ -37,7 +39,7 @@ The script uses the stack name (either provided with `-s` or defaulted from the 
 ## Usage
 
 ```bash
-./stack-backup.sh [-s stack_name] [-d backup_dir] [command]
+./docker-volume-backup.sh [-s stack_name] [-d backup_dir] [command]
 ```
 
 ### Commands
@@ -55,7 +57,7 @@ The script uses the stack name (either provided with `-s` or defaulted from the 
 To create a backup, run the following command:
 
 ```bash
-./stack-backup.sh backup
+./docker-volume-backup.sh backup
 ```
 
 The script will ask for confirmation, then stop the containers, create the backups, and restart the containers. The backup files will be created in the current directory (or the directory specified with `-d`).
@@ -65,9 +67,20 @@ The script will ask for confirmation, then stop the containers, create the backu
 To restore from the latest backup, run the following command:
 
 ```bash
-./stack-backup.sh restore
+./docker-volume-backup.sh restore
 ```
 
 The script will first ask for confirmation to stop the containers. Then, for each volume, it will prompt for confirmation to restore from the latest backup. It will also ask if you want to clean the volume (delete its current contents) before restoring. After the restore process is complete, the containers will be restarted.
 
 **Warning:** Restoring is a destructive operation. Make sure you have a backup of your current data if you need it.
+
+## Podman Users
+
+The `docker-volume-backup.sh` script is not compatible with Podman. Podman users should use the native `podman volume` commands to manage their volume backups.
+
+- **`podman volume export`**: Exports the contents of a volume to a tarball.
+  - [Official Documentation](https://docs.podman.io/en/latest/markdown/podman-volume-export.1.html)
+- **`podman volume import`**: Imports the contents of a tarball into a volume.
+  - [Official Documentation](https://docs.podman.io/en/latest/markdown/podman-volume-import.1.html)
+
+You can adapt the logic from the `docker-volume-backup.sh` script to create your own backup solution using these Podman commands.
