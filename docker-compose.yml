@@ -21,7 +21,7 @@ x-n8n: &service-n8n
 services:
   traefik:
     image: traefik:v3.5
-    container_name: traefik
+    container_name: ${COMPOSE_PROJECT_NAME}_traefik
     depends_on:
       n8n:
         condition: service_healthy
@@ -67,7 +67,7 @@ services:
   n8n:
     <<: *service-n8n
     hostname: n8n
-    container_name: n8n
+    container_name: ${COMPOSE_PROJECT_NAME}_n8n
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget --spider -q http://localhost:5678/healthz || exit 1"]
@@ -89,6 +89,7 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:latest
+    container_name: ${COMPOSE_PROJECT_NAME}_cloudflared
     restart: always
     networks: ['n8n-net']
     command: tunnel --no-autoupdate run
