@@ -2,7 +2,16 @@
 
 This file documents the changes made to the original project from the [tutorial by Kjetil Furas](https://kjetilfuras.com/self-host-n8n-with-cloudflare-zero-trust/).
 
-## [Unreleased]
+## [1.2.0] - 2026-01-28
+
+### Added
+
+-   **Configurable Ports**: Made the n8n UI and webhook ports configurable via `N8N_UI_PORT` and `N8N_WEBHOOK_PORT` environment variables for greater deployment flexibility.
+
+### Changed
+
+-   **Network Naming**: The `n8n-net` network is now explicitly named to prevent conflicts with other projects.
+-   **Ignore Files**: Added `.env.local` to `.gitignore` and `.dockerignore` to prevent local environment overrides from being committed.
 
 ## [1.1.0] - 2025-09-15
 

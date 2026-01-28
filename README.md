@@ -16,7 +16,7 @@ The goal of this setup is to provide a secure, scalable, and easy-to-maintain n8
 
 1. Clone this repository.
 2. Follow the instructions in the [original tutorial](https://kjetilfuras.com/self-host-n8n-with-cloudflare-zero-trust/) to set up your Cloudflare Tunnel and obtain the necessary credentials.
-3. Create a `.env` file and populate it with your configuration. You can use the `.env.example` file as a template.
+3. Create a `.env` file to store your environment variables. You can use `.env.example` as a template for the required values.
 4. Proceed to the appropriate documentation for your container engine.
 
 ## Documentation

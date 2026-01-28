@@ -15,7 +15,7 @@ Follow these steps to install the `apt` version and then upgrade it manually:
     ```
 
 2.  **Upgrade to the latest version**:
-    Download the latest script from GitHub to ensure you have a modern, stable version:
+    Download the latest script from GitHub to ensure you have a modern, a stable version:
     ```bash
     curl -o /usr/local/bin/podman-compose https://raw.githubusercontent.com/containers/podman-compose/main/podman_compose.py
     chmod +x /usr/local/bin/podman-compose
@@ -29,6 +29,19 @@ Follow these steps to install the `apt` version and then upgrade it manually:
     Remember to reload your shell or run `source ~/.bashrc` (or equivalent) for the changes to take effect.
 
 ### 1. Configuration
+
+The stack's behavior is controlled by environment variables and the Traefik configuration files.
+
+#### Environment Variables
+
+Create a `.env` file in the root of the project to set your configuration. You can use `.env.example` as a template.
+
+The following variables allow you to customize the ports exposed by the Traefik reverse proxy:
+
+-   `N8N_UI_PORT`: Sets the external port for the n8n UI. Defaults to `8082`.
+-   `N8N_WEBHOOK_PORT`: Sets the external port for receiving n8n webhooks. Defaults to `8083`.
+
+#### Traefik File-Based Configuration
 
 This stack uses a file-based configuration for Traefik, located in the `./traefik` directory. This approach is more secure than providing the Traefik container with access to the Podman socket.
 
