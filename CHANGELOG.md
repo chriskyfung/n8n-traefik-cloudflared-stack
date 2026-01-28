@@ -2,7 +2,19 @@
 
 This file documents the changes made to the original project from the [tutorial by Kjetil Furas](https://kjetilfuras.com/self-host-n8n-with-cloudflare-zero-trust/).
 
-## [Unreleased]
+## [1.2.0] - 2026-01-28
+
+### Added
+
+-   **Backup and Restore**: Introduced `docker-volume-backup.sh` for creating and restoring data for n8n and Traefik, enhancing data management capabilities.
+
+### Changed
+
+-   **Portability & Naming**:
+    -   Updated all services to use dynamic container names prefixed with `${COMPOSE_PROJECT_NAME}` to prevent naming conflicts across multiple stacks.
+    -   Explicitly named the `n8n-net` network to avoid conflicts in multi-project Docker and Podman environments.
+-   **Security**: Removed direct host port mappings for Traefik's internal entrypoints (`8082`, `8083`), reducing the host's external attack surface.
+-   **Code of Conduct**: Updated the abuse reporting method to use the repository's private "Report a vulnerability" feature, ensuring a secure and confidential channel.
 
 ## [1.1.0] - 2025-09-15
 
