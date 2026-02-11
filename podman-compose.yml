@@ -68,7 +68,7 @@ services:
       interval: 1m
       timeout: 10s
       retries: 3
-    volumes: # Changed from 'volumes:' to '    volumes:' for proper indentation
+    volumes:
       - n8n_storage:/home/node/.n8n # Existing volume
       - n8n_files_storage:/home/node/.n8n-files # New volume for n8n file access
       # - ./n8n/backup:/backup
