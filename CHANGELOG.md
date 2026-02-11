@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.0] - 2026-02-11
+
+### Added
+
+-   **n8n Configuration**: Added support for `N8N_NODES_EXCLUDE` environment variable to disable specific n8n nodes for n8n v2.0+.
+-   **File Access Control**: Introduced `n8n_files_storage` volume for the n8n service in `docker-compose.yml` and `podman-compose.yml` to support `N8N_RESTRICT_FILE_ACCESS_TO` for n8n v2.0+.
+
+### Updated
+
+-   **Documentation**: `README.md` updated to reflect the `N8N_NODES_EXCLUDE` and `N8N_RESTRICT_FILE_ACCESS_TO` environment variables, including a reference to the n8n v2.0 breaking changes documentation.
+
 This file documents the changes made to the original project from the [tutorial by Kjetil Furas](https://kjetilfuras.com/self-host-n8n-with-cloudflare-zero-trust/).
 
 ## [1.2.0] - 2026-01-28
