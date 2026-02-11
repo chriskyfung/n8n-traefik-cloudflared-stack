@@ -18,8 +18,9 @@ The goal of this setup is to provide a secure, scalable, and easy-to-maintain n8
 2. Follow the instructions in the [original tutorial](https://kjetilfuras.com/self-host-n8n-with-cloudflare-zero-trust/) to set up your Cloudflare Tunnel and obtain the necessary credentials.
 3. Create a `.env` file and populate it with your configuration. You can use the `.env.example` file as a template.
 4. Proceed to the appropriate documentation for your container engine.
-   * **Note:** The `N8N_NODES_EXCLUDE` environment variable can be used in your `.env` file to disable specific n8n nodes.
-   * For more details on n8n environment variables, refer to the [official documentation](https://docs.n8n.io/embed/configuration/#environment-variables).
+   * **Note:** The `N8N_NODES_EXCLUDE` environment variable can be used in your `.env` file to disable specific n8n nodes. For more details, refer to the [n8n environment variables](https://docs.n8n.io/embed/configuration/#environment-variables) documentation.
+   * **Important for n8n v2.0+:** n8n now restricts file operations to the `/home/node/.n8n-files` directory by default. A new volume `n8n_files_storage` has been added to mount this directory. If your workflows require access to other directories, you must explicitly set the `N8N_RESTRICT_FILE_ACCESS_TO` environment variable in your `.env` file to your desired path(s). For more details, refer to the [n8n v2.0 breaking changes](https://docs.n8n.io/2-0-breaking-changes/#set-default-value-for-n8n_restrict_file_access_to) documentation.
+
    
 ## Documentation
 
