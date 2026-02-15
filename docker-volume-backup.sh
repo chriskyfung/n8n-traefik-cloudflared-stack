@@ -35,6 +35,33 @@ clean_volume() {
     fi
 }
 
+# Backup a single volume
+_backup_volume() {
+    local volume_name=$1
+    local timestamp=$2
+    local skip_if_empty=$3
+
+    if [ "$skip_if_empty" = true ]; then
+        local data_empty=$(docker run --rm -v "${volume_name}:/data" alpine ls -A /data)
+        if [ -z "${data_empty}" ]; then
+            echo "${volume_name} is empty, skipping backup."
+            return
+        fi
+    fi
+
+    local backup_filename="${volume_name}_${timestamp}.tar.gz"
+    local backup_file="${BACKUP_DIR}/${backup_filename}"
+
+    echo "Backing up ${volume_name} to ${backup_file}..."
+    docker run --rm -v "${volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine sh -c 'tar czf "/backup/$1" -C /data . && chmod 600 "/backup/$1"' _ "${backup_filename}"
+    if [ $? -ne 0 ]; then
+        echo "Backup of ${volume_name} failed!"
+        docker start "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"
+        exit 1
+    fi
+    echo "${volume_name} backup successful!"
+}
+
 # Backup volumes
 backup() {
     read -p "This will stop the n8n and traefik containers. Are you sure? [y/N] " confirm
@@ -52,52 +79,40 @@ backup() {
     local n8n_volume_name="${STACK_NAME}_n8n_storage"
     local traefik_volume_name="${STACK_NAME}_traefik_data"
     local n8n_files_volume_name="${STACK_NAME}_n8n_files_storage"
-    local n8n_backup_filename="${n8n_volume_name}_${timestamp}.tar.gz"
-    local traefik_backup_filename="${traefik_volume_name}_${timestamp}.tar.gz"
-    local n8n_backup_file="${BACKUP_DIR}/${n8n_backup_filename}"
-    local traefik_backup_file="${BACKUP_DIR}/${traefik_backup_filename}"
 
-    echo "Backing up ${n8n_volume_name} to ${n8n_backup_file}..."
-    docker run --rm -v "${n8n_volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine sh -c "tar czf \"/backup/${n8n_backup_filename}\" -C /data . && chmod 600 \"/backup/${n8n_backup_filename}\""
-    if [ $? -ne 0 ]; then
-        echo "Backup of ${n8n_volume_name} failed!"
-        docker start "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"
-        exit 1
-    fi
-    echo "n8n backup successful!"
-
-    local traefik_data_empty=$(docker run --rm -v "${traefik_volume_name}:/data" alpine ls -A /data)
-    if [ -z "${traefik_data_empty}" ]; then
-        echo "Traefik data volume is empty, skipping backup."
-    else
-        echo "Backing up ${traefik_volume_name} to ${traefik_backup_file}..."
-        docker run --rm -v "${traefik_volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine tar czf "/backup/${traefik_backup_filename}" -C /data .
-        if [ $? -ne 0 ]; then
-            echo "Backup of ${traefik_volume_name} failed!"
-            docker start "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"
-            exit 1
-        fi
-        echo "Traefik backup successful!"
-    fi
-
-    local n8n_files_data_empty=$(docker run --rm -v "${n8n_files_volume_name}:/data" alpine ls -A /data)
-    if [ -z "${n8n_files_data_empty}" ]; then
-        echo "n8n files volume is empty, skipping backup."
-    else
-        local n8n_files_backup_filename="${n8n_files_volume_name}_${timestamp}.tar.gz"
-        local n8n_files_backup_file="${BACKUP_DIR}/${n8n_files_backup_filename}"
-        echo "Backing up ${n8n_files_volume_name} to ${n8n_files_backup_file}..."
-        docker run --rm -v "${n8n_files_volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine sh -c "tar czf \"/backup/${n8n_files_backup_filename}\" -C /data . && chmod 600 \"/backup/${n8n_files_backup_filename}\""
-        if [ $? -ne 0 ]; then
-            echo "Backup of ${n8n_files_volume_name} failed!"
-            docker start "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"
-            exit 1
-        fi
-        echo "n8n files backup successful!"
-    fi
+    _backup_volume "${n8n_volume_name}" "${timestamp}" false
+    _backup_volume "${traefik_volume_name}" "${timestamp}" true
+    _backup_volume "${n8n_files_volume_name}" "${timestamp}" true
 
     echo "Starting containers..."
     docker start "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"
+}
+
+# Restore a single volume
+_restore_volume() {
+    local volume_name=$1
+    local descriptive_name=$2
+
+    local latest_backup=$(ls -t "${BACKUP_DIR}/${volume_name}_"*.tar.gz 2>/dev/null | head -n 1)
+    if [ -z "${latest_backup}" ]; then
+        echo "No ${descriptive_name} backup file found."
+    else
+        read -p "Restore ${descriptive_name} from ${latest_backup}? [y/N] " confirm
+        if [[ "$confirm" =~ ^[yY]$ ]]; then
+            clean_volume "${volume_name}"
+            echo "Restoring ${volume_name}..."
+            local backup_filename=$(basename "${latest_backup}")
+            docker run --rm -v "${volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine tar xzf "/backup/${backup_filename}" -C /data
+            if [ $? -eq 0 ]; then
+                echo "${descriptive_name} restore successful!"
+            else
+                echo "${descriptive_name} restore failed!"
+                exit 1
+            fi
+        else
+            echo "${descriptive_name} restore cancelled."
+        fi
+    fi
 }
 
 # Restore volumes
@@ -116,71 +131,9 @@ restore() {
     local traefik_volume_name="${STACK_NAME}_traefik_data"
     local n8n_files_volume_name="${STACK_NAME}_n8n_files_storage"
 
-    # Restore n8n
-    local latest_n8n_backup=$(ls -t "${BACKUP_DIR}/${n8n_volume_name}_"*.tar.gz 2>/dev/null | head -n 1)
-    if [ -z "${latest_n8n_backup}" ]; then
-        echo "No n8n backup file found."
-    else
-        read -p "Restore n8n from ${latest_n8n_backup}? [y/N] " confirm_n8n
-        if [[ "$confirm_n8n" =~ ^[yY]$ ]]; then
-            clean_volume "${n8n_volume_name}"
-            echo "Restoring ${n8n_volume_name}..."
-            local backup_filename=$(basename "${latest_n8n_backup}")
-            docker run --rm -v "${n8n_volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine tar xzf "/backup/${backup_filename}" -C /data
-            if [ $? -eq 0 ]; then
-                echo "n8n restore successful!"
-            else
-                echo "n8n restore failed!"
-                exit 1
-            fi
-        else
-            echo "n8n restore cancelled."
-        fi
-    fi
-
-    # Restore Traefik
-    local latest_traefik_backup=$(ls -t "${BACKUP_DIR}/${traefik_volume_name}_"*.tar.gz 2>/dev/null | head -n 1)
-    if [ -z "${latest_traefik_backup}" ]; then
-        echo "No Traefik backup file found."
-    else
-        read -p "Restore Traefik from ${latest_traefik_backup}? [y/N] " confirm_traefik
-        if [[ "$confirm_traefik" =~ ^[yY]$ ]]; then
-            clean_volume "${traefik_volume_name}"
-            echo "Restoring ${traefik_volume_name}..."
-            local backup_filename=$(basename "${latest_traefik_backup}")
-            docker run --rm -v "${traefik_volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine tar xzf "/backup/${backup_filename}" -C /data
-            if [ $? -eq 0 ]; then
-                echo "Traefik restore successful!"
-            else
-                echo "Traefik restore failed!"
-                exit 1
-            fi
-        else
-            echo "Traefik restore cancelled."
-        fi
-    fi
-
-    # Restore n8n files
-    local latest_n8n_files_backup=$(ls -t "${BACKUP_DIR}/${n8n_files_volume_name}_"*.tar.gz 2>/dev/null | head -n 1)
-    if [ -z "${latest_n8n_files_backup}" ]; then
-        echo "No n8n files backup file found."
-    else
-        read -p "Restore n8n files from ${latest_n8n_files_backup}? [y/N] " confirm_n8n_files
-        if [[ "$confirm_n8n_files" =~ ^[yY]$ ]]; then
-            clean_volume "${n8n_files_volume_name}"
-            echo "Restoring ${n8n_files_volume_name}..."
-            local backup_filename=$(basename "${latest_n8n_files_backup}")
-            docker run --rm -v "${n8n_files_volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine tar xzf "/backup/${backup_filename}" -C /data
-            if [ $? -eq 0 ]; then
-                echo "n8n files restore successful!"
-            else
-                echo "n8n files restore failed!"
-                exit 1
-            fi
-        else
-            echo "n8n files restore cancelled."
-        fi
-    fi
+    _restore_volume "${n8n_volume_name}" "n8n"
+    _restore_volume "${traefik_volume_name}" "Traefik"
+    _restore_volume "${n8n_files_volume_name}" "n8n files"
 
     echo "Starting containers..."
     docker start "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"
