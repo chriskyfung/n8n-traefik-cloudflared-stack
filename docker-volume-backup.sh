@@ -58,7 +58,7 @@ backup() {
     local traefik_backup_file="${BACKUP_DIR}/${traefik_backup_filename}"
 
     echo "Backing up ${n8n_volume_name} to ${n8n_backup_file}..."
-    docker run --rm -v "${n8n_volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine tar czf "/backup/${n8n_backup_filename}" -C /data .
+    docker run --rm -v "${n8n_volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine sh -c "tar czf \"/backup/${n8n_backup_filename}\" -C /data . && chmod 600 \"/backup/${n8n_backup_filename}\""
     if [ $? -ne 0 ]; then
         echo "Backup of ${n8n_volume_name} failed!"
         docker start "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"
@@ -87,7 +87,7 @@ backup() {
         local n8n_files_backup_filename="${n8n_files_volume_name}_${timestamp}.tar.gz"
         local n8n_files_backup_file="${BACKUP_DIR}/${n8n_files_backup_filename}"
         echo "Backing up ${n8n_files_volume_name} to ${n8n_files_backup_file}..."
-        docker run --rm -v "${n8n_files_volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine tar czf "/backup/${n8n_files_backup_filename}" -C /data .
+        docker run --rm -v "${n8n_files_volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine sh -c "tar czf \"/backup/${n8n_files_backup_filename}\" -C /data . && chmod 600 \"/backup/${n8n_files_backup_filename}\""
         if [ $? -ne 0 ]; then
             echo "Backup of ${n8n_files_volume_name} failed!"
             docker start "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"
