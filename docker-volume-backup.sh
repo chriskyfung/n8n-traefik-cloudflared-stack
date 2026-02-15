@@ -64,7 +64,7 @@ _backup_volume() {
     # Secure the n8n backups
     if [[ "${volume_name}" == *"_n8n_storage" || "${volume_name}" == *"_n8n_files_storage" ]]; then
         echo "Securing ${backup_file}..."
-        chmod 600 "${backup_file}"
+        chmod 600 "${backup_file}" || { echo "Failed to secure ${backup_file}!"; docker start "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"; exit 1; }
     fi
 }
 
