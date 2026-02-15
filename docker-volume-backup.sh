@@ -70,16 +70,14 @@ backup() {
         exit 1
     fi
 
-    local n8n_container="${STACK_NAME}_n8n"
-    local traefik_container="${STACK_NAME}_traefik"
+    local containers_to_check=("${STACK_NAME}_n8n" "${STACK_NAME}_traefik")
     local containers_to_restart=()
 
-    if [ -n "$(docker ps -q -f name="^/${n8n_container}$" -f status=running)" ]; then
-        containers_to_restart+=("${n8n_container}")
-    fi
-    if [ -n "$(docker ps -q -f name="^/${traefik_container}$" -f status=running)" ]; then
-        containers_to_restart+=("${traefik_container}")
-    fi
+    for container in "${containers_to_check[@]}"; do
+        if [ -n "$(docker ps -q -f name="^/${container}$" -f status=running)" ]; then
+            containers_to_restart+=("${container}")
+        fi
+    done
 
     echo "Starting backup..."
     if [ ${#containers_to_restart[@]} -gt 0 ]; then
@@ -135,16 +133,14 @@ restore() {
         exit 1
     fi
 
-    local n8n_container="${STACK_NAME}_n8n"
-    local traefik_container="${STACK_NAME}_traefik"
+    local containers_to_check=("${STACK_NAME}_n8n" "${STACK_NAME}_traefik")
     local containers_to_restart=()
 
-    if [ -n "$(docker ps -q -f name="^/${n8n_container}$" -f status=running)" ]; then
-        containers_to_restart+=("${n8n_container}")
-    fi
-    if [ -n "$(docker ps -q -f name="^/${traefik_container}$" -f status=running)" ]; then
-        containers_to_restart+=("${traefik_container}")
-    fi
+    for container in "${containers_to_check[@]}"; do
+        if [ -n "$(docker ps -q -f name="^/${container}$" -f status=running)" ]; then
+            containers_to_restart+=("${container}")
+        fi
+    done
 
     echo "Starting restore..."
     if [ ${#containers_to_restart[@]} -gt 0 ]; then
