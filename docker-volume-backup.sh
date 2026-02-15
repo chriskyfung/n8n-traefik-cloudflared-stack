@@ -64,28 +64,40 @@ _backup_volume() {
 
 # Backup volumes
 backup() {
-    read -p "This will stop the n8n and traefik containers. Are you sure? [y/N] " confirm
+    read -p "This will stop the n8n and traefik containers if they are running. Are you sure? [y/N] " confirm
     if [[ ! "$confirm" =~ ^[yY]$ ]]; then
         echo "Aborting."
         exit 1
     fi
 
+    local n8n_container="${STACK_NAME}_n8n"
+    local traefik_container="${STACK_NAME}_traefik"
+    local containers_to_restart=()
+
+    if [ -n "$(docker ps -q -f name="^/${n8n_container}$" -f status=running)" ]; then
+        containers_to_restart+=("${n8n_container}")
+    fi
+    if [ -n "$(docker ps -q -f name="^/${traefik_container}$" -f status=running)" ]; then
+        containers_to_restart+=("${traefik_container}")
+    fi
+
     echo "Starting backup..."
-    echo "Stopping containers..."
-    docker stop "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"
+    if [ ${#containers_to_restart[@]} -gt 0 ]; then
+        echo "Stopping containers: ${containers_to_restart[*]}..."
+        docker stop "${containers_to_restart[@]}"
+    fi
 
     mkdir -p "${BACKUP_DIR}"
     local timestamp=$(date +"%Y%m%d_%H%M%S")
-    local n8n_volume_name="${STACK_NAME}_n8n_storage"
-    local traefik_volume_name="${STACK_NAME}_traefik_data"
-    local n8n_files_volume_name="${STACK_NAME}_n8n_files_storage"
 
-    _backup_volume "${n8n_volume_name}" "${timestamp}" false
-    _backup_volume "${traefik_volume_name}" "${timestamp}" true
-    _backup_volume "${n8n_files_volume_name}" "${timestamp}" true
+    _backup_volume "${STACK_NAME}_n8n_storage" "${timestamp}" false
+    _backup_volume "${STACK_NAME}_traefik_data" "${timestamp}" true
+    _backup_volume "${STACK_NAME}_n8n_files_storage" "${timestamp}" true
 
-    echo "Starting containers..."
-    docker start "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"
+    if [ ${#containers_to_restart[@]} -gt 0 ]; then
+        echo "Starting containers: ${containers_to_restart[*]}..."
+        docker start "${containers_to_restart[@]}"
+    fi
 }
 
 # Restore a single volume
@@ -117,26 +129,37 @@ _restore_volume() {
 
 # Restore volumes
 restore() {
-    read -p "This will stop the n8n and traefik containers. Are you sure? [y/N] " confirm
+    read -p "This will stop the n8n and traefik containers if they are running. Are you sure? [y/N] " confirm
     if [[ ! "$confirm" =~ ^[yY]$ ]]; then
         echo "Aborting."
         exit 1
     fi
 
+    local n8n_container="${STACK_NAME}_n8n"
+    local traefik_container="${STACK_NAME}_traefik"
+    local containers_to_restart=()
+
+    if [ -n "$(docker ps -q -f name="^/${n8n_container}$" -f status=running)" ]; then
+        containers_to_restart+=("${n8n_container}")
+    fi
+    if [ -n "$(docker ps -q -f name="^/${traefik_container}$" -f status=running)" ]; then
+        containers_to_restart+=("${traefik_container}")
+    fi
+
     echo "Starting restore..."
-    echo "Stopping containers..."
-    docker stop "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"
+    if [ ${#containers_to_restart[@]} -gt 0 ]; then
+        echo "Stopping containers: ${containers_to_restart[*]}..."
+        docker stop "${containers_to_restart[@]}"
+    fi
 
-    local n8n_volume_name="${STACK_NAME}_n8n_storage"
-    local traefik_volume_name="${STACK_NAME}_traefik_data"
-    local n8n_files_volume_name="${STACK_NAME}_n8n_files_storage"
+    _restore_volume "${STACK_NAME}_n8n_storage" "n8n"
+    _restore_volume "${STACK_NAME}_traefik_data" "Traefik"
+    _restore_volume "${STACK_NAME}_n8n_files_storage" "n8n files"
 
-    _restore_volume "${n8n_volume_name}" "n8n"
-    _restore_volume "${traefik_volume_name}" "Traefik"
-    _restore_volume "${n8n_files_volume_name}" "n8n files"
-
-    echo "Starting containers..."
-    docker start "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"
+    if [ ${#containers_to_restart[@]} -gt 0 ]; then
+        echo "Starting containers: ${containers_to_restart[*]}..."
+        docker start "${containers_to_restart[@]}"
+    fi
 }
 
 # --- Main ---
