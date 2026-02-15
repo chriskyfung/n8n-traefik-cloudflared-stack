@@ -56,8 +56,7 @@ _backup_volume() {
     docker run --rm -v "${volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine sh -c 'tar czf "/backup/$1" -C /data . && chmod 600 "/backup/$1"' _ "${backup_filename}"
     if [ $? -ne 0 ]; then
         echo "Backup of ${volume_name} failed!"
-        docker start "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"
-        exit 1
+        return 1
     fi
     echo "${volume_name} backup successful!"
 }
@@ -88,10 +87,18 @@ backup() {
     mkdir -p "${BACKUP_DIR}"
     local timestamp=$(date +"%Y%m%d_%H%M%S")
 
-    _backup_volume "${STACK_NAME}_n8n_storage" "${timestamp}" false
-    _backup_volume "${STACK_NAME}_traefik_data" "${timestamp}" true
-    _backup_volume "${STACK_NAME}_n8n_files_storage" "${timestamp}" true
+    _backup_volume "${STACK_NAME}_n8n_storage" "${timestamp}" false || handle_backup_failure
+    _backup_volume "${STACK_NAME}_traefik_data" "${timestamp}" true || handle_backup_failure
+    _backup_volume "${STACK_NAME}_n8n_files_storage" "${timestamp}" true || handle_backup_failure
 
+    if [ ${#containers_to_restart[@]} -gt 0 ]; then
+        echo "Starting containers: ${containers_to_restart[*]}..."
+        docker start "${containers_to_restart[@]}"
+    fi
+}
+
+handle_backup_failure() {
+    echo "A backup step failed. Restoring container state..."
     if [ ${#containers_to_restart[@]} -gt 0 ]; then
         echo "Starting containers: ${containers_to_restart[*]}..."
         docker start "${containers_to_restart[@]}"
@@ -117,7 +124,7 @@ _restore_volume() {
                 echo "${descriptive_name} restore successful!"
             else
                 echo "${descriptive_name} restore failed!"
-                exit 1
+                return 1
             fi
         else
             echo "${descriptive_name} restore cancelled."
@@ -148,14 +155,22 @@ restore() {
         docker stop "${containers_to_restart[@]}"
     fi
 
-    _restore_volume "${STACK_NAME}_n8n_storage" "n8n"
-    _restore_volume "${STACK_NAME}_traefik_data" "Traefik"
-    _restore_volume "${STACK_NAME}_n8n_files_storage" "n8n files"
+    _restore_volume "${STACK_NAME}_n8n_storage" "n8n" || handle_restore_failure
+    _restore_volume "${STACK_NAME}_traefik_data" "Traefik" || handle_restore_failure
+    _restore_volume "${STACK_NAME}_n8n_files_storage" "n8n files" || handle_restore_failure
 
     if [ ${#containers_to_restart[@]} -gt 0 ]; then
         echo "Starting containers: ${containers_to_restart[*]}..."
         docker start "${containers_to_restart[@]}"
     fi
+}
+
+handle_restore_failure() {
+    if [ ${#containers_to_restart[@]} -gt 0 ]; then
+        echo "Starting containers: ${containers_to_restart[*]}..."
+        docker start "${containers_to_restart[@]}"
+    fi
+    exit 1
 }
 
 # --- Main ---
