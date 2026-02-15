@@ -53,19 +53,13 @@ _backup_volume() {
     local backup_file="${BACKUP_DIR}/${backup_filename}"
 
     echo "Backing up ${volume_name} to ${backup_file}..."
-    docker run --rm -v "${volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine tar czf "/backup/${backup_filename}" -C /data .
+    docker run --rm -v "${volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine sh -c 'tar czf "/backup/$1" -C /data . && chmod 600 "/backup/$1"' _ "${backup_filename}"
     if [ $? -ne 0 ]; then
         echo "Backup of ${volume_name} failed!"
         docker start "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"
         exit 1
     fi
     echo "${volume_name} backup successful!"
-
-    # Secure the n8n backups
-    if [[ "${volume_name}" == *"_n8n_storage" || "${volume_name}" == *"_n8n_files_storage" ]]; then
-        echo "Securing ${backup_file}..."
-        chmod 600 "${backup_file}" || { echo "Failed to secure ${backup_file}!"; docker start "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"; exit 1; }
-    fi
 }
 
 # Backup volumes
