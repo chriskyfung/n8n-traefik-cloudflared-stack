@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.3.1] - 2026-02-15
+
+### Added
+
+- **Backup Script**: Added conditional logic to stop/start containers only if they are running, improving reliability during backup operations.
+- **Backup Script**: Added support for backing up and restoring the `n8n_files_storage` volume.
+
+### Changed
+
+- **Backup Script**: Enhanced error handling in backup and restore functions.
+- **Backup Script**: Simplified container restart logic for better maintainability.
+- **Backup Script**: Applied restrictive permissions (600) to all backup files for enhanced security.
+- **Backup Script**: Modularized volume backup and restore logics for improved code organization.
+- **Documentation**: Clarified volume backup skip logic for empty directories.
+
+### Fixed
+
+- **Backup Script**: Added error handling for `chmod` operations to prevent potential failures.
+- **Backup Script**: Properly quoted filenames to prevent command injection vulnerabilities.
+
+### Security
+
+- **Backup Script**: Secured backup files with 600 permissions to restrict access.
+
 ## [1.3.0] - 2026-02-11
 
 ### Added
