@@ -25,14 +25,14 @@ The script uses the stack name (either provided with `-s` or defaulted from the 
 ### Backup Process
 
 1.  **Confirmation:** The script will ask for confirmation before stopping the containers.
-2.  **Stop Containers:** It stops the `n8n` and `traefik` containers.
-3.  **Create Backups:** It creates timestamped `.tar.gz` archives of the `n8n_storage` and `traefik_data` volumes.
-4.  **Restart Containers:** It restarts the `n8n` and `traefik` containers.
+2.  **Stop Containers:** It stops the `n8n` and `traefik` containers to ensure data consistency.
+3.  **Create Backups:** It creates timestamped `.tar.gz` archives of the `n8n_storage`, `n8n_files_storage`, and `traefik_data` volumes. Backups for the `traefik_data` and `n8n_files_storage` volumes will be skipped if they are empty.
+4.  **Restart Containers:** It restarts the stopped containers.
 
 ### Restore Process
 
 1.  **Confirmation:** The script will ask for confirmation before stopping the containers.
-2.  **Stop Containers:** It stops the `n8n` and `traefik` containers.
+2.  **Stop Containers:** It stops the `n8n` and `traefik` containers to safely perform the restore.
 3.  **Restore Volumes:** For each volume, it prompts for confirmation to restore. It also offers to clean the volume before restoring.
 4.  **Restart Containers:** It restarts the `n8n` and `traefik` containers.
 
@@ -45,7 +45,7 @@ The script uses the stack name (either provided with `-s` or defaulted from the 
 ### Commands
 
 - `backup`: Creates a backup of the `n8n_storage` and `traefik_data` volumes.
-- `restore`: Restores the `n8n_storage` and `traefik_data` volumes from the latest backup.
+- `restore`: Restores the `n8n_storage`, `n8n_files_storage`, and `traefik_data` volumes from the latest backup.
 
 ### Options
 
