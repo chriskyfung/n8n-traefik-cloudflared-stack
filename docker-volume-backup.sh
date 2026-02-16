@@ -5,29 +5,36 @@ STACK_NAME=""
 # Default backup directory
 BACKUP_DIR=$(pwd)
 
+# --- Colors ---
+COLOR_RESET=$'\033[0m'
+COLOR_RED=$'\033[0;31m'
+COLOR_GREEN=$'\033[0;32m'
+COLOR_YELLOW=$'\033[0;33m'
+COLOR_CYAN=$'\033[0;36m'
+
 # --- Functions ---
 
 # Show usage
 usage() {
-    echo "Usage: $0 [-s stack_name] [-d backup_dir] [backup|restore]"
-    echo "  -s stack_name: Set the stack name (defaults to the parent directory name)."
-    echo "  -d backup_dir: Set the backup directory (defaults to the current directory)."
-    echo "  backup: Backup n8n and traefik volumes."
-    echo "  restore: Restore n8n and traefik volumes from the latest backup."
+    echo -e "Usage: $0 [-s stack_name] [-d backup_dir] [backup|restore]"
+    echo -e "  -s stack_name: Set the stack name (defaults to the parent directory name)."
+    echo -e "  -d backup_dir: Set the backup directory (defaults to the current directory)."
+    echo -e "  ${COLOR_CYAN}backup${COLOR_RESET}:  Backup n8n and traefik volumes."
+    echo -e "  ${COLOR_CYAN}restore${COLOR_RESET}: Restore n8n and traefik volumes from the latest backup."
     exit 1
 }
 
 # Clean a volume
 clean_volume() {
     local volume_name=$1
-    read -p "Are you sure you want to clean the volume '${volume_name}'? This will delete all data in it. [y/N] " confirm
+    read -p "$(echo -e "${COLOR_YELLOW}Are you sure you want to clean the volume '${volume_name}'? This will delete all data in it. [y/N] ${COLOR_RESET}")" confirm
     if [[ "$confirm" =~ ^[yY]$ ]]; then
-        echo "Cleaning volume ${volume_name}..."
+        echo -e "${COLOR_CYAN}Cleaning volume ${volume_name}...${COLOR_RESET}"
         docker run --rm -v "${volume_name}:/data" alpine sh -c "find /data -mindepth 1 -delete"
         if [ $? -eq 0 ]; then
-            echo "Volume cleaned successfully."
+            echo -e "${COLOR_GREEN}Volume cleaned successfully.${COLOR_RESET}"
         else
-            echo "Failed to clean volume."
+            echo -e "${COLOR_RED}Failed to clean volume.${COLOR_RESET}"
             exit 1
         fi
     else
@@ -44,7 +51,7 @@ _backup_volume() {
     if [ "$skip_if_empty" = true ]; then
         local data_empty=$(docker run --rm -v "${volume_name}:/data" alpine ls -A /data)
         if [ -z "${data_empty}" ]; then
-            echo "${volume_name} is empty, skipping backup."
+            echo -e "${COLOR_YELLOW}${volume_name} is empty, skipping backup.${COLOR_RESET}"
             return
         fi
     fi
@@ -52,13 +59,13 @@ _backup_volume() {
     local backup_filename="${volume_name}_${timestamp}.tar.gz"
     local backup_file="${BACKUP_DIR}/${backup_filename}"
 
-    echo "Backing up ${volume_name} to ${backup_file}..."
+    echo -e "${COLOR_CYAN}Backing up ${volume_name} to ${backup_file}...${COLOR_RESET}"
     docker run --rm -v "${volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine sh -c 'tar czf "/backup/$1" -C /data . && chmod 600 "/backup/$1"' _ "${backup_filename}"
     if [ $? -ne 0 ]; then
-        echo "Backup of ${volume_name} failed!"
+        echo -e "${COLOR_RED}Backup of ${volume_name} failed!${COLOR_RESET}"
         return 1
     fi
-    echo "${volume_name} backup successful!"
+    echo -e "${COLOR_GREEN}${volume_name} backup successful!${COLOR_RESET}"
 }
 
 # Core backup logic
@@ -78,22 +85,22 @@ _restore_volume() {
 
     local latest_backup=$(ls -t "${BACKUP_DIR}/${volume_name}_"*.tar.gz 2>/dev/null | head -n 1)
     if [ -z "${latest_backup}" ]; then
-        echo "No ${descriptive_name} backup file found."
+        echo -e "${COLOR_YELLOW}No ${descriptive_name} backup file found.${COLOR_RESET}"
     else
-        read -p "Restore ${descriptive_name} from ${latest_backup}? [y/N] " confirm
+        read -p "$(echo -e "${COLOR_YELLOW}Restore ${descriptive_name} from ${latest_backup}? [y/N] ${COLOR_RESET}")" confirm
         if [[ "$confirm" =~ ^[yY]$ ]]; then
             clean_volume "${volume_name}"
-            echo "Restoring ${volume_name}..."
+            echo -e "${COLOR_CYAN}Restoring ${volume_name}...${COLOR_RESET}"
             local backup_filename=$(basename "${latest_backup}")
             docker run --rm -v "${volume_name}:/data" -v "${BACKUP_DIR}:/backup" alpine tar xzf "/backup/${backup_filename}" -C /data
             if [ $? -eq 0 ]; then
-                echo "${descriptive_name} restore successful!"
+                echo -e "${COLOR_GREEN}${descriptive_name} restore successful!${COLOR_RESET}"
             else
-                echo "${descriptive_name} restore failed!"
+                echo -e "${COLOR_RED}${descriptive_name} restore failed!${COLOR_RESET}"
                 return 1
             fi
         else
-            echo "${descriptive_name} restore cancelled."
+            echo -e "${COLOR_YELLOW}${descriptive_name} restore cancelled.${COLOR_RESET}"
         fi
     fi
 }
@@ -110,9 +117,9 @@ execute_with_container_management() {
     local operation_name=$1
     local core_function=$2
 
-    read -p "This will stop the n8n and traefik containers if they are running. Are you sure? [y/N] " confirm
+    read -p "$(echo -e "${COLOR_YELLOW}This will stop the n8n and traefik containers if they are running. Are you sure? [y/N] ${COLOR_RESET}")" confirm
     if [[ ! "$confirm" =~ ^[yY]$ ]]; then
-        echo "Aborting."
+        echo -e "${COLOR_RED}Aborting.${COLOR_RESET}"
         exit 1
     fi
 
@@ -123,21 +130,21 @@ execute_with_container_management() {
         fi
     done
 
-    echo "Starting ${operation_name}..."
+    echo -e "${COLOR_CYAN}Starting ${operation_name}...${COLOR_RESET}"
     if [ ${#containers_to_restart[@]} -gt 0 ]; then
-        echo "Stopping containers: ${containers_to_restart[*]}..."
+        echo -e "${COLOR_CYAN}Stopping containers: ${containers_to_restart[*]}...${COLOR_RESET}"
         docker stop "${containers_to_restart[@]}"
     fi
 
     # Execute the core logic (backup or restore)
     local operation_failed=0
     if ! "${core_function}"; then
-        echo "A ${operation_name} step failed. Restoring container state..."
+        echo -e "${COLOR_RED}A ${operation_name} step failed. Restoring container state...${COLOR_RESET}"
         operation_failed=1
     fi
 
     if [ ${#containers_to_restart[@]} -gt 0 ]; then
-        echo "Starting containers: ${containers_to_restart[*]}..."
+        echo -e "${COLOR_CYAN}Starting containers: ${containers_to_restart[*]}...${COLOR_RESET}"
         docker start "${containers_to_restart[@]}"
     fi
 
@@ -145,7 +152,7 @@ execute_with_container_management() {
         exit 1
     fi
 
-    echo "${operation_name^} completed successfully."
+    echo -e "${COLOR_GREEN}${operation_name^} completed successfully.${COLOR_RESET}"
 }
 
 # --- Main ---
