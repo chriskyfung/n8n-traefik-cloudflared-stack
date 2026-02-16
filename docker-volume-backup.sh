@@ -6,11 +6,11 @@ STACK_NAME=""
 BACKUP_DIR=$(pwd)
 
 # --- Colors ---
-COLOR_RESET='\033[0m'
-COLOR_RED='\033[0;31m'
-COLOR_GREEN='\033[0;32m'
-COLOR_YELLOW='\033[0;33m'
-COLOR_CYAN='\033[0;36m'
+COLOR_RESET=$'\033[0m'
+COLOR_RED=$'\033[0;31m'
+COLOR_GREEN=$'\033[0;32m'
+COLOR_YELLOW=$'\033[0;33m'
+COLOR_CYAN=$'\033[0;36m'
 
 # --- Functions ---
 
@@ -51,7 +51,7 @@ _backup_volume() {
     if [ "$skip_if_empty" = true ]; then
         local data_empty=$(docker run --rm -v "${volume_name}:/data" alpine ls -A /data)
         if [ -z "${data_empty}" ]; then
-            echo -e "${volume_name} is empty, skipping backup."
+            echo -e "${COLOR_YELLOW}${volume_name} is empty, skipping backup.${COLOR_RESET}"
             return
         fi
     fi
@@ -85,7 +85,7 @@ _restore_volume() {
 
     local latest_backup=$(ls -t "${BACKUP_DIR}/${volume_name}_"*.tar.gz 2>/dev/null | head -n 1)
     if [ -z "${latest_backup}" ]; then
-        echo -e "No ${descriptive_name} backup file found."
+        echo -e "${COLOR_YELLOW}No ${descriptive_name} backup file found.${COLOR_RESET}"
     else
         read -p "$(echo -e "${COLOR_YELLOW}Restore ${descriptive_name} from ${latest_backup}? [y/N] ${COLOR_RESET}")" confirm
         if [[ "$confirm" =~ ^[yY]$ ]]; then
@@ -100,7 +100,7 @@ _restore_volume() {
                 return 1
             fi
         else
-            echo -e "${descriptive_name} restore cancelled."
+            echo -e "${COLOR_YELLOW}${descriptive_name} restore cancelled.${COLOR_RESET}"
         fi
     fi
 }
@@ -132,7 +132,7 @@ execute_with_container_management() {
 
     echo -e "${COLOR_CYAN}Starting ${operation_name}...${COLOR_RESET}"
     if [ ${#containers_to_restart[@]} -gt 0 ]; then
-        echo -e "Stopping containers: ${containers_to_restart[*]}..."
+        echo -e "${COLOR_CYAN}Stopping containers: ${containers_to_restart[*]}...${COLOR_RESET}"
         docker stop "${containers_to_restart[@]}"
     fi
 
@@ -144,7 +144,7 @@ execute_with_container_management() {
     fi
 
     if [ ${#containers_to_restart[@]} -gt 0 ]; then
-        echo -e "Starting containers: ${containers_to_restart[*]}..."
+        echo -e "${COLOR_CYAN}Starting containers: ${containers_to_restart[*]}...${COLOR_RESET}"
         docker start "${containers_to_restart[@]}"
     fi
 
