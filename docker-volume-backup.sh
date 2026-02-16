@@ -130,18 +130,19 @@ execute_with_container_management() {
     fi
 
     # Execute the core logic (backup or restore)
+    local operation_failed=0
     if ! "${core_function}"; then
         echo "A ${operation_name} step failed. Restoring container state..."
-        if [ ${#containers_to_restart[@]} -gt 0 ]; then
-            echo "Starting containers: ${containers_to_restart[*]}..."
-            docker start "${containers_to_restart[@]}"
-        fi
-        exit 1
+        operation_failed=1
     fi
 
     if [ ${#containers_to_restart[@]} -gt 0 ]; then
         echo "Starting containers: ${containers_to_restart[*]}..."
         docker start "${containers_to_restart[@]}"
+    fi
+
+    if [ ${operation_failed} -ne 0 ]; then
+        exit 1
     fi
 
     echo "${operation_name^} completed successfully."
