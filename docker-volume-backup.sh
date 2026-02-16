@@ -61,48 +61,14 @@ _backup_volume() {
     echo "${volume_name} backup successful!"
 }
 
-# Backup volumes
-backup() {
-    read -p "This will stop the n8n and traefik containers if they are running. Are you sure? [y/N] " confirm
-    if [[ ! "$confirm" =~ ^[yY]$ ]]; then
-        echo "Aborting."
-        exit 1
-    fi
-
-    local containers_to_check=("${STACK_NAME}_n8n" "${STACK_NAME}_traefik")
-    local containers_to_restart=()
-
-    for container in "${containers_to_check[@]}"; do
-        if [ -n "$(docker ps -q -f name="^/${container}$" -f status=running)" ]; then
-            containers_to_restart+=("${container}")
-        fi
-    done
-
-    echo "Starting backup..."
-    if [ ${#containers_to_restart[@]} -gt 0 ]; then
-        echo "Stopping containers: ${containers_to_restart[*]}..."
-        docker stop "${containers_to_restart[@]}"
-    fi
-
+# Core backup logic
+_backup_core() {
     mkdir -p "${BACKUP_DIR}"
     local timestamp=$(date +"%Y%m%d_%H%M%S")
 
-    _backup_volume "${STACK_NAME}_n8n_storage" "${timestamp}" false || handle_backup_failure
-    _backup_volume "${STACK_NAME}_traefik_data" "${timestamp}" true || handle_backup_failure
-    _backup_volume "${STACK_NAME}_n8n_files_storage" "${timestamp}" true || handle_backup_failure
-
-    if [ ${#containers_to_restart[@]} -gt 0 ]; then
-        echo "Starting containers: ${containers_to_restart[*]}..."
-        docker start "${containers_to_restart[@]}"
-    fi
-}
-
-handle_backup_failure() {
-    echo "A backup step failed. Restoring container state..."
-    if [ ${#containers_to_restart[@]} -gt 0 ]; then
-        echo "Starting containers: ${containers_to_restart[*]}..."
-        docker start "${containers_to_restart[@]}"
-    fi
+    _backup_volume "${STACK_NAME}_n8n_storage" "${timestamp}" false || return 1
+    _backup_volume "${STACK_NAME}_traefik_data" "${timestamp}" true || return 1
+    _backup_volume "${STACK_NAME}_n8n_files_storage" "${timestamp}" true || return 1
 }
 
 # Restore a single volume
@@ -132,45 +98,54 @@ _restore_volume() {
     fi
 }
 
-# Restore volumes
-restore() {
+# Core restore logic
+_restore_core() {
+    _restore_volume "${STACK_NAME}_n8n_storage" "n8n" || return 1
+    _restore_volume "${STACK_NAME}_traefik_data" "Traefik" || return 1
+    _restore_volume "${STACK_NAME}_n8n_files_storage" "n8n files" || return 1
+}
+
+# Wrapper function to manage container lifecycle for an operation
+execute_with_container_management() {
+    local operation_name=$1
+    local core_function=$2
+
     read -p "This will stop the n8n and traefik containers if they are running. Are you sure? [y/N] " confirm
     if [[ ! "$confirm" =~ ^[yY]$ ]]; then
         echo "Aborting."
         exit 1
     fi
 
-    local containers_to_check=("${STACK_NAME}_n8n" "${STACK_NAME}_traefik")
     local containers_to_restart=()
-
-    for container in "${containers_to_check[@]}"; do
+    for container in "${STACK_NAME}_n8n" "${STACK_NAME}_traefik"; do
         if [ -n "$(docker ps -q -f name="^/${container}$" -f status=running)" ]; then
             containers_to_restart+=("${container}")
         fi
     done
 
-    echo "Starting restore..."
+    echo "Starting ${operation_name}..."
     if [ ${#containers_to_restart[@]} -gt 0 ]; then
         echo "Stopping containers: ${containers_to_restart[*]}..."
         docker stop "${containers_to_restart[@]}"
     fi
 
-    _restore_volume "${STACK_NAME}_n8n_storage" "n8n" || handle_restore_failure
-    _restore_volume "${STACK_NAME}_traefik_data" "Traefik" || handle_restore_failure
-    _restore_volume "${STACK_NAME}_n8n_files_storage" "n8n files" || handle_restore_failure
+    # Execute the core logic (backup or restore)
+    local operation_failed=0
+    if ! "${core_function}"; then
+        echo "A ${operation_name} step failed. Restoring container state..."
+        operation_failed=1
+    fi
 
     if [ ${#containers_to_restart[@]} -gt 0 ]; then
         echo "Starting containers: ${containers_to_restart[*]}..."
         docker start "${containers_to_restart[@]}"
     fi
-}
 
-handle_restore_failure() {
-    if [ ${#containers_to_restart[@]} -gt 0 ]; then
-        echo "Starting containers: ${containers_to_restart[*]}..."
-        docker start "${containers_to_restart[@]}"
+    if [ ${operation_failed} -ne 0 ]; then
+        exit 1
     fi
-    exit 1
+
+    echo "${operation_name^} completed successfully."
 }
 
 # --- Main ---
@@ -205,10 +180,10 @@ fi
 
 case "$COMMAND" in
     backup)
-        backup
+        execute_with_container_management "backup" "_backup_core"
         ;;
     restore)
-        restore
+        execute_with_container_management "restore" "_restore_core"
         ;;
     *)
         usage
