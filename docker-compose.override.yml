@@ -1,0 +1,9 @@
+services:
+  n8n:
+    networks:
+      - ollama-network
+
+networks:
+  ollama-network:
+    external: true
+    name: ollama-network
