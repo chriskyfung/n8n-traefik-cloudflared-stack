@@ -24,7 +24,7 @@ x-n8n: &service-n8n
 
 services:
   traefik:
-    image: traefik:v3.5
+    image: traefik:v3.7
     container_name: ${COMPOSE_PROJECT_NAME}_traefik
     depends_on:
       n8n:
